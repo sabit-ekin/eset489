@@ -31,18 +31,19 @@
 
   // ---------- scenes (steps: [start time in s, explanation shown under the canvas]) ----------
   var SCENES = [
-    { wk: 'Week 1', name: 'Foundations: the AI toolbox', dur: 11,
+    { wk: 'Week 1', name: 'Foundations: the AI toolbox', dur: 13,
       steps: [[0, 'Python is the language of modern AI: almost every tool here is used from Python.'],
-              [2.6, 'PyTorch and TensorFlow are the frameworks for building and training neural networks.'],
-              [5.2, 'Hugging Face is the open hub: download pretrained models and datasets instead of starting from zero.'],
-              [7.8, 'Gradio turns a model into a web demo in a few lines; LangChain connects LLMs to your data and tools.']],
-      init: function () { return { tools: ['Python', 'PyTorch', 'TensorFlow', 'Hugging Face', 'Gradio', 'LangChain'] }; },
+              [2.4, 'PyTorch and TensorFlow are the frameworks for building and training neural networks.'],
+              [4.8, 'Hugging Face is the open hub: download pretrained models and datasets instead of starting from zero.'],
+              [7.2, 'Gradio turns a model into a web demo in a few lines; LangChain connects LLMs to your data and tools.'],
+              [9.6, 'GitHub keeps and shares your code; AI coding assistants such as Claude Code and Codex help you write, explain, and debug it.']],
+      init: function () { return { tools: ['Python', 'PyTorch', 'TensorFlow', 'Hugging Face', 'Gradio', 'LangChain', 'GitHub', 'Claude Code', 'Codex'] }; },
       draw: function (ctx, s, t, W, H, C) {
-        var cx = W / 2, cy = H * 0.55, rx = W * 0.34, ry = H * 0.33, n = s.tools.length, col = [C.maroon, C.gold, C.teal];
-        var hi = [[0], [1, 2], [3], [4, 5]][s._step] || [], fs = Math.max(11, Math.min(14, W / 36));
+        var cx = W / 2, cy = H * 0.56, rx = W * 0.37, ry = H * 0.35, n = s.tools.length, col = [C.maroon, C.gold, C.teal];
+        var hi = [[0], [1, 2], [3], [4, 5], [6, 7, 8]][s._step] || [], fs = Math.max(10, Math.min(13, W / 40));
         s.tools.forEach(function (name, i) {
-          var f = ease((t - 0.3 - i * 0.2) / 0.5); if (!f) return;
-          var a = -Math.PI / 2 + i * 2 * Math.PI / n, x = cx + Math.cos(a) * rx * f, y = cy + Math.sin(a) * ry * f, on = hi.indexOf(i) >= 0;
+          var f = ease((t - 0.3 - i * 0.15) / 0.5); if (!f) return;
+          var a = -Math.PI / 2 + i * 2 * Math.PI / n, rf = (i % 2 ? 0.66 : 1) * f, x = cx + Math.cos(a) * rx * rf, y = cy + Math.sin(a) * ry * rf, on = hi.indexOf(i) >= 0;
           alpha(ctx, (on ? 0.8 : 0.25) * f); ctx.strokeStyle = col[i % 3]; ctx.lineWidth = on ? 2.5 : 1.5; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x, y); ctx.stroke();
           var u = (t * (on ? 0.9 : 0.4) + i / n) % 1; if (i % 2) u = 1 - u;   // data moving both ways
           alpha(ctx, f); ctx.fillStyle = col[i % 3]; ctx.beginPath(); ctx.arc(cx + (x - cx) * u, cy + (y - cy) * u, on ? 4 : 3, 0, 7); ctx.fill();
@@ -152,46 +153,98 @@
         label(ctx, 'n = ' + done + ' samples', W * 0.05, H * 0.09, C, 12);
       } },
 
-    { wk: 'Week 5', name: 'Machine learning pipelines', dur: 12.5,
-      steps: [[0, 'Data: collect raw measurements, such as sensor logs. Real data is messy: gaps, noise, outliers.'],
-              [2, 'Clean: fill in missing values and remove noise and outliers.'],
-              [4, 'Features: turn raw data into useful numbers a model can learn from (averages, frequencies, trends).'],
-              [6, 'Train: fit the model’s parameters to the training data.'],
-              [8, 'Evaluate: test the model on data it has never seen. Not good enough? Go back and improve it.'],
-              [10.2, 'Deploy: put the model to work in a real system, and keep monitoring how it performs.']],
-      init: function () { var R = rng(17), d = []; for (var i = 0; i < 16; i++) d.push({ o: i / 16, j: (R() - 0.5) * 14, c: Math.floor(R() * 4) }); return { st: ['Data', 'Clean', 'Features', 'Train', 'Evaluate', 'Deploy'], d: d }; },
+    { wk: 'Week 5', name: 'Machine learning pipelines', dur: 16,
+      steps: [[0, 'Data: collect raw measurements, here a motor’s vibration sensor. Real data is messy: missing stretches and outlier spikes.'],
+              [2.6, 'Clean: fill the gaps (dashed) and remove the outliers, so errors in the data don’t become errors in the model.'],
+              [5.2, 'Features: cut the signal into windows and summarize each one with numbers a model can learn from (mean, RMS, peak).'],
+              [7.8, 'Train: split the data (80% to train, 20% held back to test) and fit the model; the training loss drops.'],
+              [10.4, 'Evaluate: test on the held-back data it has never seen. The confusion matrix shows right and wrong calls. Not good enough? Retrain.'],
+              [13, 'Deploy: the model watches the live sensor stream and raises an alert when it detects a fault; keep monitoring it.']],
+      init: function () {
+        var R = rng(41), n = 120, raw = [], clean = [], gap = function (i) { return (i >= 30 && i <= 38) || (i >= 80 && i <= 86); };
+        for (var i = 0; i < n; i++) { var v = 0.5 * Math.sin(i / 20 * 2 * Math.PI) + 0.25 * Math.sin(i / 7 * 2 * Math.PI); clean.push(v); raw.push(gap(i) ? null : v + gauss(R) * 0.12); }
+        raw[55] = 1.65; raw[101] = -1.55;
+        var feats = []; for (var w = 0; w < 4; w++) { var sum = 0, sq = 0, pk = 0; for (i = w * 30; i < w * 30 + 30; i++) { sum += clean[i]; sq += clean[i] * clean[i]; pk = Math.max(pk, Math.abs(clean[i])); } feats.push([sum / 30, Math.sqrt(sq / 30), pk]); }
+        return { n: n, raw: raw, clean: clean, gap: gap, feats: feats, st: ['Data', 'Clean', 'Features', 'Train', 'Evaluate', 'Deploy'] };
+      },
       draw: function (ctx, s, t, W, H, C) {
-        var n = s.st.length, cols = W >= 520 ? n : 3, rows = Math.ceil(n / cols), fs = Math.max(11, Math.min(14, W / 38));
-        var bw = Math.min(118, (W * 0.88 - (cols - 1) * 14) / cols), bh = fs * 2.6, gx = (W * 0.88 - cols * bw) / Math.max(1, cols - 1);
-        var rowH = rows > 1 ? H * 0.3 : 0, top = H * 0.46 - rowH / 2, pts = [];
-        s.st.forEach(function (name, i) { var r = Math.floor(i / cols), k = i % cols; if (r % 2) k = cols - 1 - k; pts.push([W * 0.06 + k * (bw + gx) + bw / 2, top + r * rowH]); });
-        var seg = [0]; for (var i = 1; i < n; i++) seg.push(seg[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1])); var Ltot = seg[n - 1];
-        function at(d) { for (var i = 1; i < n; i++) if (d <= seg[i]) { var f = (d - seg[i - 1]) / (seg[i] - seg[i - 1]); return [pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f, pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f, i - 1 + f]; } return [pts[n - 1][0], pts[n - 1][1], n - 1]; }
-        alpha(ctx, 1); ctx.strokeStyle = C.line; ctx.lineWidth = 3; ctx.beginPath(); pts.forEach(function (p, i) { i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]); }); ctx.stroke();
-        var raw = [C.muted, C.maroon, C.gold, C.teal], show = clamp(t / 0.6, 0, 1), cur = s._step;
-        s.d.forEach(function (p) {
-          var q = at(((t * 0.11 + p.o) % 1) * Ltot), k = q[2], messy = k < 1;
-          var jy = messy ? p.j * (1 - k) : 0;
-          alpha(ctx, show * (k > n - 1.3 ? (n - 1 - k) / 0.3 : 1)); ctx.fillStyle = messy ? raw[p.c] : k < 3 ? C.teal : C.gold;
-          if (k >= 2 && k < 3) { ctx.fillRect(q[0] - 4.5, q[1] - 4.5 + jy, 9, 9); } else { ctx.beginPath(); ctx.arc(q[0], q[1] + jy, k >= 3 ? 5 : 4, 0, 7); ctx.fill(); }
-        });
-        if (cur >= 4) {   // the loop back from Evaluate to Train
-          var a = pts[4], b = pts[3], dip = bh * 1.25, mx = (a[0] + b[0]) / 2, my = Math.max(a[1], b[1]) + dip;
-          alpha(ctx, cur === 4 ? 0.95 : 0.4); ctx.setLineDash([4, 4]); ctx.strokeStyle = C.maroon; ctx.lineWidth = 1.8;
-          ctx.beginPath(); ctx.moveTo(a[0], a[1] + bh / 2); ctx.quadraticCurveTo(mx, my + 10, b[0], b[1] + bh / 2 + 4); ctx.stroke(); ctx.setLineDash([]);
-          arrow(ctx, [b[0] + 8, b[1] + bh / 2 + 14], [b[0] + 1, b[1] + bh / 2 + 3], C.maroon, 1.8);
-          centered(ctx, 'retrain', mx, my + 22, C, 11, C.maroon, cur === 4 ? 0.95 : 0.4);
-        }
-        font(ctx, fs); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        var k = s._step, u = t - [0, 2.6, 5.2, 7.8, 10.4, 13][k], n = s.st.length, fs = Math.max(10, Math.min(12, W / 44));
+        // the pipeline: numbered stages along the top
+        var y0 = H * 0.12, x0 = W * 0.08, x1 = W * 0.92, dx = (x1 - x0) / (n - 1);
+        alpha(ctx, 1); ctx.strokeStyle = C.line; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+        ctx.strokeStyle = C.maroon; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + dx * Math.min(k + ease(u / 0.6), n - 1), y0); ctx.stroke();
         s.st.forEach(function (name, i) {
-          var p = pts[i], f = ease((t - i * 0.2) / 0.5), on = i === cur; if (!f) return;
-          var z = on ? 1.08 : 1, w = bw * z, h = bh * z;
-          alpha(ctx, f); ctx.fillStyle = on ? (i === n - 1 ? C.gold : C.maroon) : C.bg; pill(ctx, p[0] - w / 2, p[1] - h / 2, w, h); ctx.fill();
-          ctx.strokeStyle = i === n - 1 ? C.gold : C.maroon; ctx.lineWidth = 1.8; ctx.stroke();
-          ctx.fillStyle = on ? C.bg : C.text; ctx.fillText((i + 1) + '. ' + name, p[0], p[1] + 1);
+          var x = x0 + i * dx, on = i === k, past = i < k;
+          alpha(ctx, 1); ctx.fillStyle = on ? C.maroon : past ? C.chip : C.bg; ctx.strokeStyle = i <= k ? C.maroon : C.line; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(x, y0, on ? 11 : 9, 0, 7); ctx.fill(); ctx.stroke();
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; font(ctx, on ? 11 : 10); ctx.fillStyle = on ? C.bg : C.text; ctx.fillText(i + 1, x, y0 + 1); ctx.textBaseline = 'alphabetic';
+          label(ctx, name, x, y0 + 26, C, fs, on ? C.maroon : C.muted, on ? 1 : 0.85); ctx.textAlign = 'left';
         });
-        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-        label(ctx, 'raw data → trained model → product', W * 0.05, H * 0.09, C, 12);
+        // the detail panel for the current stage
+        var px = W * 0.06, py = H * 0.32, pw = W * 0.88, ph = H * 0.62;
+        alpha(ctx, 1); ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.strokeRect(px, py, pw, ph);
+        function SX(i) { return px + 10 + (pw - 20) * i / (s.n - 1); }
+        function SY(v, top, h) { return top + h / 2 - v * h * 0.32; }
+        function signal(vals, top, h, col, a, w, dash) {
+          alpha(ctx, a); ctx.strokeStyle = col; ctx.lineWidth = w || 1.6; if (dash) ctx.setLineDash(dash); ctx.beginPath(); var pen = false;
+          vals.forEach(function (v, i) { if (v == null) { pen = false; return; } var X = SX(i), Y = SY(v, top, h); pen ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); pen = true; });
+          ctx.stroke(); ctx.setLineDash([]);
+        }
+        var g = ease(u / 0.8);
+        if (k === 0) {
+          var shownRaw = s.raw.map(function (v, i) { return i / s.n <= ease(u / 1.4) ? v : null; });
+          [[30, 38], [80, 86]].forEach(function (r) { alpha(ctx, 0.5 * g); ctx.fillStyle = C.chip; ctx.fillRect(SX(r[0]), py + 6, SX(r[1]) - SX(r[0]), ph - 12); centered(ctx, 'missing', (SX(r[0]) + SX(r[1])) / 2, py + ph - 10, C, 10, C.muted, g); });
+          signal(shownRaw, py, ph, C.teal, 0.9);
+          if (u > 1.2) [[55, 1.65], [101, -1.55]].forEach(function (o) { var X = SX(o[0]), Y = SY(o[1], py, ph); alpha(ctx, 1); ctx.strokeStyle = C.maroon; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X, Y, 7, 0, 7); ctx.stroke(); label(ctx, 'outlier', X + 10, Y + 4, C, 10, C.maroon); });
+        } else if (k === 1) {
+          signal(s.raw, py, ph, C.muted, 0.3 * (1 - g));
+          var mix = s.raw.map(function (v, i) { return v == null || i === 55 || i === 101 ? null : v + (s.clean[i] - v) * g; });
+          signal(mix, py, ph, C.teal, 0.95, 2);
+          [[29, 39], [79, 87]].forEach(function (r) { signal(s.clean.map(function (v, i) { return i >= r[0] && i <= r[0] + (r[1] - r[0]) * g ? v : null; }), py, ph, C.gold, 1, 2.4, [4, 3]); centered(ctx, 'filled', (SX(r[0]) + SX(r[1])) / 2, py + ph - 10, C, 10, C.gold, g); });
+          [[55, 1.65], [101, -1.55]].forEach(function (o) { var X = SX(o[0]); alpha(ctx, 1 - g); ctx.fillStyle = C.maroon; ctx.beginPath(); ctx.arc(X, SY(o[1] * (1 - g), py, ph), 4, 0, 7); ctx.fill(); centered(ctx, 'removed', X, py + 14, C, 10, C.maroon, g); });
+        } else if (k === 2) {
+          var top = py, h = ph * 0.45;
+          signal(s.clean, top, h, C.teal, 0.9, 1.6);
+          for (var w = 0; w < 4; w++) { var wa = ease((u - w * 0.35) / 0.4); alpha(ctx, 0.9 * wa); ctx.strokeStyle = C.maroon; ctx.lineWidth = 1.4; ctx.strokeRect(SX(w * 30) + 2, top + 4, SX(29) - SX(0) - 4, h - 8); centered(ctx, 'w' + (w + 1), (SX(w * 30) + SX(w * 30 + 29)) / 2, top + h + 2, C, 10, C.maroon, wa); }
+          var cols = ['window', 'mean', 'RMS', 'peak'], cw = (pw - 20) / 4, ty = py + h + 18, rh = Math.min(16, (ph - h - 26) / 5);
+          cols.forEach(function (c, j) { label(ctx, c, px + 10 + j * cw, ty, C, 10, C.muted, g); });
+          s.feats.forEach(function (f, r) { var ra = ease((u - 0.3 - r * 0.35) / 0.4); if (!ra) return; label(ctx, 'w' + (r + 1), px + 10, ty + (r + 1) * rh, C, 10, C.text, ra); f.forEach(function (v, j) { label(ctx, v.toFixed(2), px + 10 + (j + 1) * cw, ty + (r + 1) * rh, C, 10, C.text, ra); }); });
+        } else if (k === 3) {
+          var bw = pw - 20, bx = px + 10, by = py + 12, sp = ease(u / 0.6);
+          alpha(ctx, 1); ctx.fillStyle = C.teal; ctx.fillRect(bx, by, bw * 0.8 * sp + bw * (1 - sp) * 0.8, 14); ctx.fillStyle = C.gold; ctx.fillRect(bx + bw * 0.8 + 3 * sp, by, bw * 0.2 - 3 * sp, 14);
+          label(ctx, 'train 80%', bx + 6, by + 11, C, 10, C.bg); label(ctx, 'test 20%', bx + bw * 0.8 + 7, by + 11, C, 10, C.bg, sp);
+          var lx = bx + 24, ly = by + 30, lw = bw - 34, lh = ph - 62;
+          alpha(ctx, 1); ctx.strokeStyle = C.line; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx, ly + lh); ctx.lineTo(lx + lw, ly + lh); ctx.stroke();
+          label(ctx, 'loss', bx, ly + 10, C, 10); label(ctx, 'epochs →', lx + lw - 50, ly + lh + 13, C, 10);
+          var E = clamp((u - 0.5) / 1.9, 0, 1); alpha(ctx, 1); ctx.strokeStyle = C.maroon; ctx.lineWidth = 2.2; ctx.beginPath();
+          for (var e = 0; e <= E; e += 0.01) { var L = 0.08 + 0.85 * Math.exp(-e * 4.5) + 0.03 * Math.sin(e * 40) * Math.exp(-e * 3); var X = lx + e * lw, Y = ly + (1 - L) * lh; e ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }
+          ctx.stroke();
+        } else if (k === 4) {
+          var cs = Math.min(ph * 0.3, pw * 0.16), mx = px + Math.max(56, pw * 0.2), my = py + 30, vals = [[46, 2], [1, 11]], names = ['normal', 'fault'];
+          centered(ctx, 'predicted', mx + cs, my - 14, C, 10); 
+          names.forEach(function (nm, j) { centered(ctx, nm, mx + cs * j + cs / 2, my - 2, C, 10); ctx.textAlign = 'right'; label(ctx, nm, mx - 6, my + cs * j + cs / 2 + 4, C, 10); ctx.textAlign = 'left'; });
+          ctx.save(); ctx.translate(mx - 46, my + cs); ctx.rotate(-Math.PI / 2); centered(ctx, 'actual', 0, -4, C, 10); ctx.restore();
+          vals.forEach(function (row, r) { row.forEach(function (v, c) { var a = ease((u - (r * 2 + c) * 0.3) / 0.4); alpha(ctx, a); ctx.fillStyle = r === c ? C.teal : C.maroon; ctx.globalAlpha = a * (r === c ? 0.85 : 0.5); ctx.fillRect(mx + c * cs + 1, my + r * cs + 1, cs - 2, cs - 2); centered(ctx, String(v), mx + c * cs + cs / 2, my + r * cs + cs / 2 + 5, C, 14, C.bg, a); }); });
+          var ax = mx + cs * 2 + 18, aa = ease((u - 1.4) / 0.5);
+          if (ax + 90 < px + pw) { label(ctx, 'test accuracy', ax, my + 14, C, 11, C.muted, aa); label(ctx, '57 / 60 = 95%', ax, my + 34, C, 13, C.text, aa); label(ctx, '3 wrong calls', ax, my + 54, C, 11, C.maroon, aa); }
+          else label(ctx, 'accuracy 57/60 = 95%', mx - 40, my + cs * 2 + 18, C, 11, C.text, aa);
+        } else {
+          var mx2 = px + 30, my2 = py + ph * 0.45, rot = t * 6, mdx = px + pw * 0.62, alertOn = (u % 2.6) > 1.6;
+          alpha(ctx, 1); ctx.strokeStyle = C.maroon; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(mx2, my2, 16, 0, 7); ctx.stroke();
+          for (var b = 0; b < 3; b++) { var aa2 = rot + b * 2.09; ctx.beginPath(); ctx.moveTo(mx2, my2); ctx.lineTo(mx2 + Math.cos(aa2) * 12, my2 + Math.sin(aa2) * 12); ctx.stroke(); }
+          centered(ctx, 'motor', mx2, my2 + 32, C, 10);
+          var sx0 = mx2 + 24, sx1 = mdx - 34;   // live stream
+          alpha(ctx, 0.9); ctx.strokeStyle = C.teal; ctx.lineWidth = 1.6; ctx.beginPath();
+          for (var xx = sx0; xx <= sx1; xx += 2) { var ph2 = (xx - t * 60) / 9, amp = alertOn && xx > sx1 - 40 ? 13 : 6; var yy = my2 + Math.sin(ph2) * amp + Math.sin(ph2 * 2.7) * 2; xx === sx0 ? ctx.moveTo(xx, yy) : ctx.lineTo(xx, yy); }
+          ctx.stroke();
+          var bw2 = 60, bh2 = 30; alpha(ctx, 1); ctx.fillStyle = C.bg; ctx.strokeStyle = C.maroon; ctx.lineWidth = 2; ctx.fillRect(mdx - 30, my2 - bh2 / 2, bw2, bh2); ctx.strokeRect(mdx - 30, my2 - bh2 / 2, bw2, bh2);
+          centered(ctx, 'model', mdx, my2 + 4, C, 11, C.maroon);
+          var lx2 = Math.min(px + pw - 40, mdx + 52); arrow(ctx, [mdx + 32, my2], [lx2 - 12, my2], C.muted, 1.6);
+          alpha(ctx, 1); ctx.fillStyle = alertOn ? C.maroon : C.teal; ctx.beginPath(); ctx.arc(lx2, my2, 9, 0, 7); ctx.fill();
+          centered(ctx, alertOn ? 'fault!' : 'OK', lx2, my2 + 26, C, 11, alertOn ? C.maroon : C.teal);
+          label(ctx, 'monitoring live data', px + 10, py + ph - 10, C, 10);
+        }
+        label(ctx, 'stage ' + (k + 1) + ' of 6', W * 0.05, H * 0.035 + 10, C, 11);
       } },
 
     { wk: 'Weeks 6–7', name: 'Supervised learning: regression', dur: 11,
@@ -275,54 +328,72 @@
         label(ctx, t < 3.6 ? 'random start' : 'iteration ' + Math.min(Math.round(step), s.hist.length - 1) + (step >= s.hist.length - 1 ? ' · converged' : ''), m, m - 8, C, 12);
       } },
 
-    { wk: 'Weeks 10–11', name: 'Neural networks: forward pass and backpropagation', dur: 12,
-      steps: [[0, 'Inputs (features, such as temperature, vibration, and current) enter on the left.'],
-              [2, 'Forward pass: each neuron adds up its weighted inputs and applies an activation; line thickness shows the weight.'],
-              [4.6, 'The output is compared with the right answer (target); the difference is the loss.'],
-              [6.6, 'Backpropagation sends the error back (gold) and nudges every weight to reduce the loss.'],
-              [9, 'Run it again: the prediction is closer and the loss is lower. Training repeats this thousands of times.']],
+    { wk: 'Weeks 10–11', name: 'Neural networks: recognizing a handwritten digit', dur: 13,
+      steps: [[0, 'Input layer: a 28×28 image of a handwritten digit is flattened into 784 numbers, one per pixel.'],
+              [2.4, 'Forward pass: each neuron in the hidden layers (128, then 64) adds up its weighted inputs and applies an activation.'],
+              [5, 'The output layer gives one score per digit, 0 to 9. Untrained, the network is unsure: “6” gets only 0.48.'],
+              [7.2, 'Backpropagation compares the scores with the right answer (6) and sends the error back (gold) to adjust every weight.'],
+              [9.6, 'Run it again: now “6” gets 0.91. Training repeats this over thousands of images.']],
       init: function () {
-        var R = rng(5), L = [4, 6, 6, 3], w = [];
-        for (var i = 0; i < L.length - 1; i++) { w.push([]); for (var a = 0; a < L[i]; a++) { w[i].push([]); for (var b = 0; b < L[i + 1]; b++) w[i][a].push(gauss(R)); } }
-        return { L: L, w: w, R: R, upd: false };
+        var R = rng(5), L = [12, 9, 7, 10], w = [], n = 14, oc = document.createElement('canvas'); oc.width = n; oc.height = n;
+        var g = oc.getContext('2d'); g.fillStyle = '#000'; g.font = 'bold 15px Georgia, serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('6', n / 2, n / 2 + 1);
+        var d = g.getImageData(0, 0, n, n).data, px = [], dark = [];
+        for (var i = 0; i < n * n; i++) { px.push(d[i * 4 + 3] / 255); if (d[i * 4 + 3] > 140) dark.push(i); }
+        for (i = 0; i < L.length - 1; i++) { w.push([]); for (var a = 0; a < L[i]; a++) { w[i].push([]); for (var b = 0; b < L[i + 1]; b++) w[i][a].push(gauss(R)); } }
+        var fly = []; for (i = 0; i < 12; i++) fly.push(dark[Math.floor(R() * dark.length)]);
+        return { L: L, w: w, R: R, upd: false, n: n, px: px, fly: fly,
+          p1: [0.12, 0.01, 0.02, 0.01, 0.03, 0.22, 0.48, 0.01, 0.09, 0.01], p2: [0.02, 0, 0.01, 0, 0.01, 0.03, 0.91, 0, 0.02, 0] };
       },
       draw: function (ctx, s, t, W, H, C) {
-        var L = s.L, pos = [], gaps = L.length - 1;
-        if (t >= 8.6 && !s.upd) { s.upd = true; s.w.forEach(function (l) { l.forEach(function (r) { r.forEach(function (v, j) { r[j] = v * 0.85 + gauss(s.R) * 0.3; }); }); }); }
-        L.forEach(function (k, i) { pos.push([]); for (var j = 0; j < k; j++) pos[i].push([W * (0.1 + 0.58 * i / gaps), H * (0.52 + (j - (k - 1) / 2) * Math.min(0.13, 0.75 / k))]); });
-        var fwd = t < 2 ? 0 : t < 9 ? clamp((t - 2) / 2.4, 0, 1) : clamp((t - 9) / 1.6, 0, 1), back = t >= 6.6 && t < 9 ? clamp((t - 6.6) / 1.9, 0, 1) : 0;
+        var L = s.L, gaps = L.length - 1, cols = [W * 0.32, W * 0.49, W * 0.64, W * 0.8], top = H * 0.2, bot = H * 0.86, pos = [];
+        if (t >= 9.4 && !s.upd) { s.upd = true; s.w.forEach(function (l) { l.forEach(function (r) { r.forEach(function (v, j) { r[j] = v * 0.85 + gauss(s.R) * 0.3; }); }); }); }
+        L.forEach(function (k, i) { pos.push([]); var span = (bot - top) * (i === 3 ? 1 : i === 0 ? 0.92 : k / 11); for (var j = 0; j < k; j++) pos[i].push([cols[i], (top + bot) / 2 + (j - (k - 1) / 2) * span / (k - 1)]); });
+        var r = Math.max(4.5, Math.min(9, (bot - top) / 10 / 2 - 1.5));
+        // the image and the flatten arrow
+        var cell = Math.min(W * 0.17 / s.n, H * 0.3 / s.n), ix = W * 0.03, iy = (top + bot) / 2 - cell * s.n / 2;
+        for (var p = 0; p < s.n * s.n; p++) { alpha(ctx, 0.06 + 0.9 * s.px[p]); ctx.fillStyle = C.text; ctx.fillRect(ix + (p % s.n) * cell, iy + Math.floor(p / s.n) * cell, cell - 0.5, cell - 0.5); }
+        alpha(ctx, 1); ctx.strokeStyle = C.line; ctx.lineWidth = 1; ctx.strokeRect(ix - 1, iy - 1, cell * s.n + 2, cell * s.n + 2);
+        centered(ctx, '28×28 image', ix + cell * s.n / 2, iy + cell * s.n + 14, C, 10);
+        var ax0 = ix + cell * s.n + 4, ax1 = cols[0] - r - 6; alpha(ctx, 0.9); arrow(ctx, [ax0, (top + bot) / 2], [ax1, (top + bot) / 2], C.muted, 1.4);
+        centered(ctx, 'flatten', (ax0 + ax1) / 2, (top + bot) / 2 - 7, C, 10);
+        // group boxes and labels
+        function box(x0, x1, txtTop, txtBot) { alpha(ctx, 0.9); ctx.strokeStyle = C.line; ctx.lineWidth = 1.2; ctx.strokeRect(x0, top - r - 6, x1 - x0, bot - top + 2 * r + 12); centered(ctx, txtTop, (x0 + x1) / 2, top - r - 11, C, 10, C.maroon); centered(ctx, txtBot, (x0 + x1) / 2, bot + r + 18, C, 10); }
+        box(cols[0] - r - 5, cols[0] + r + 5, '784 inputs', 'input');
+        box(cols[1] - r - 8, cols[2] + r + 8, '128 · 64 neurons', 'hidden layers');
+        box(cols[3] - r - 5, W * 0.97, '10 digits', 'output');
+        var fwd = t < 2.4 ? 0 : t < 9.6 ? clamp((t - 2.4) / 2.4, 0, 1) : clamp((t - 9.6) / 1.8, 0, 1), back = t >= 7.2 && t < 9.6 ? clamp((t - 7.2) / 2.1, 0, 1) : 0;
         for (var i = 0; i < gaps; i++) for (var a = 0; a < L[i]; a++) for (var b = 0; b < L[i + 1]; b++) {
-          var p = pos[i][a], q = pos[i + 1][b], wv = s.w[i][a][b];
-          alpha(ctx, 0.15 + Math.min(0.45, Math.abs(wv) * 0.25)); ctx.strokeStyle = wv > 0 ? C.maroon : C.muted; ctx.lineWidth = 0.6 + Math.min(2.4, Math.abs(wv) * 1.1);
-          ctx.beginPath(); ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]); ctx.stroke();
+          var P = pos[i][a], Q = pos[i + 1][b], wv = s.w[i][a][b];
+          alpha(ctx, 0.08 + Math.min(0.32, Math.abs(wv) * 0.18)); ctx.strokeStyle = wv > 0 ? C.maroon : C.muted; ctx.lineWidth = 0.5 + Math.min(1.8, Math.abs(wv) * 0.8);
+          ctx.beginPath(); ctx.moveTo(P[0], P[1]); ctx.lineTo(Q[0], Q[1]); ctx.stroke();
           var u = fwd * gaps - i;
-          if (u > 0 && u < 1 && Math.abs(wv) > 0.5) { alpha(ctx, 0.95); ctx.fillStyle = C.maroon; ctx.beginPath(); ctx.arc(p[0] + (q[0] - p[0]) * u, p[1] + (q[1] - p[1]) * u, 2.6, 0, 7); ctx.fill(); }
+          if (u > 0 && u < 1 && Math.abs(wv) > 0.9) { alpha(ctx, 0.95); ctx.fillStyle = C.maroon; ctx.beginPath(); ctx.arc(P[0] + (Q[0] - P[0]) * u, P[1] + (Q[1] - P[1]) * u, 2.3, 0, 7); ctx.fill(); }
           var v = back * gaps - (gaps - 1 - i);
-          if (v > 0 && v < 1 && Math.abs(wv) > 0.6) { alpha(ctx, 0.95); ctx.fillStyle = C.gold; ctx.beginPath(); ctx.arc(q[0] + (p[0] - q[0]) * v, q[1] + (p[1] - q[1]) * v, 2.8, 0, 7); ctx.fill(); }
+          if (v > 0 && v < 1 && Math.abs(wv) > 0.9) { alpha(ctx, 0.95); ctx.fillStyle = C.gold; ctx.beginPath(); ctx.arc(Q[0] + (P[0] - Q[0]) * v, Q[1] + (P[1] - Q[1]) * v, 2.5, 0, 7); ctx.fill(); }
         }
-        var second = t >= 9, pred = second ? [0.08, 0.86, 0.06] : [0.25, 0.55, 0.2], target = [0, 1, 0];
+        // pixels flying into the input layer
+        var fl = clamp((t - 0.4) / 1.8, 0, 1);
+        s.fly.forEach(function (pi, j) {
+          var f = ease(fl * 1.6 - j * 0.05); if (f <= 0 || f >= 1) return;
+          var sx = ix + (pi % s.n + 0.5) * cell, sy = iy + (Math.floor(pi / s.n) + 0.5) * cell, d = pos[0][j];
+          alpha(ctx, 0.9); ctx.fillStyle = C.text; ctx.beginPath(); ctx.arc(sx + (d[0] - sx) * f, sy + (d[1] - sy) * f - Math.sin(f * Math.PI) * 18, 2.6, 0, 7); ctx.fill();
+        });
+        var pr = t >= 9.6 && fwd > 0.99 ? s.p2 : s.p1, outOn = (t >= 4.8 && t < 9.6) || (t >= 9.6 && fwd > 0.99);
         pos.forEach(function (layer, i) {
-          var reached = i === 0 ? clamp(t / 0.6, 0, 1) : clamp((fwd * gaps - i + 0.2) * 4, 0, 1);
-          layer.forEach(function (p, j) {
-            var on = i === gaps ? pred[j] : 0.35 + 0.65 * Math.abs(Math.sin(j * 1.7 + i * 2.3 + (second ? 1 : 0)));
-            alpha(ctx, 1); ctx.fillStyle = C.bg; ctx.strokeStyle = i === gaps ? C.gold : C.maroon; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.arc(p[0], p[1], 9, 0, 7); ctx.fill(); ctx.stroke();
-            alpha(ctx, reached * (0.15 + 0.85 * on)); ctx.fillStyle = i === gaps ? C.gold : C.maroon; ctx.beginPath(); ctx.arc(p[0], p[1], 6, 0, 7); ctx.fill();
+          var reached = i === 0 ? clamp((t - 0.6) / 1.6, 0, 1) : clamp((fwd * gaps - i + 0.25) * 4, 0, 1);
+          layer.forEach(function (P, j) {
+            var on = i === 0 ? 0.3 + 0.7 * s.px[s.fly[j]] : i === 3 ? (outOn ? pr[j] : 0) : 0.3 + 0.7 * Math.abs(Math.sin(j * 1.7 + i * 2.3 + (t >= 9.6 ? 1 : 0)));
+            alpha(ctx, 1); ctx.fillStyle = C.bg; ctx.strokeStyle = i === 3 ? C.text : C.maroon; ctx.lineWidth = 1.6;
+            ctx.beginPath(); ctx.arc(P[0], P[1], r, 0, 7); ctx.fill(); ctx.stroke();
+            alpha(ctx, reached * on); ctx.fillStyle = i === 3 ? C.gold : C.maroon; ctx.beginPath(); ctx.arc(P[0], P[1], r - 1.5, 0, 7); ctx.fill();
+            if (i === 3) {
+              ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; font(ctx, Math.max(9, r * 1.2)); alpha(ctx, 1); ctx.fillStyle = C.text; ctx.fillText(j, P[0], P[1] + 1); ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+              if (outOn) { var bx = P[0] + r + 4, bw = (W * 0.965 - bx) * pr[j]; alpha(ctx, 0.9); ctx.fillStyle = j === 6 ? C.gold : C.line; ctx.fillRect(bx, P[1] - 3, Math.max(1, bw), 6); }
+              if (j === 6 && t >= 7.2) { alpha(ctx, 1); ctx.strokeStyle = C.teal; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(P[0], P[1], r + 3.5, 0, 7); ctx.stroke(); }
+            }
           });
         });
-        var outReached = fwd >= 0.99 || t >= 4.4;
-        if (outReached) {   // prediction vs target, and the loss
-          var ox = pos[gaps][0][0] + 18, fs = Math.max(10, Math.min(12, W / 40));
-          label(ctx, 'pred', ox, pos[gaps][0][1] - 20, C, fs); if (t >= 4.6) label(ctx, 'target', ox + fs * 3.4, pos[gaps][0][1] - 20, C, fs);
-          pos[gaps].forEach(function (p, j) {
-            label(ctx, pred[j].toFixed(2), ox, p[1] + 4, C, fs, C.text);
-            if (t >= 4.6) label(ctx, target[j].toFixed(0), ox + fs * 3.4 + 8, p[1] + 4, C, fs, C.text);
-          });
-          if (t >= 4.6) tag(ctx, 'loss ' + (second && fwd > 0.99 ? '0.01' : '0.10'), ox - 4, pos[gaps][2][1] + 32, C, second && fwd > 0.99 ? C.teal : C.maroon, C.bg, fs);
-        }
-        var phase = t < 2 ? 'inputs' : back > 0 && back < 1 ? 'backpropagation' : t >= 4.6 && t < 6.6 ? 'compare with target' : 'forward pass';
-        label(ctx, phase, W * 0.05, H * 0.09, C, 12);
-        centered(ctx, 'inputs', pos[0][0][0], H * 0.95, C, 11); centered(ctx, 'hidden layers', (pos[1][0][0] + pos[2][0][0]) / 2, H * 0.95, C, 11); centered(ctx, 'outputs', pos[gaps][0][0], H * 0.95, C, 11);
+        if (outOn) { var P6 = pos[3][6]; label(ctx, pr[6].toFixed(2), P6[0] + r + 6, P6[1] - 7, C, 10, C.text); }
       } },
 
     { wk: 'Week 12', name: 'Deep learning architectures: convolutional neural networks (CNNs)', dur: 12.5,
