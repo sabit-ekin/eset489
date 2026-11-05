@@ -85,13 +85,22 @@ h1 { font-size: clamp(2.3rem, 5vw, 3.3rem); line-height: 1.08; margin: 0 0 16px;
 /* Animated lab */
 .lab { position: relative; margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: 0 10px 30px rgba(60, 20, 10, .08); overflow: hidden; }
 .lab canvas { display: block; width: 100%; aspect-ratio: 4 / 3; }
-.lab figcaption { padding: 4px 16px 12px; font-size: .88rem; color: var(--muted); min-height: 46px; }
+.lab figcaption { padding: 4px 16px 14px; font-size: .88rem; color: var(--muted); min-height: 46px; }
 .lab-wk { display: inline-block; margin-right: 6px; padding: 1px 9px; border-radius: 999px; background: var(--chip); color: var(--maroon); font-weight: 600; font-size: .78rem; }
 .lab-dots { display: flex; justify-content: center; flex-wrap: wrap; gap: 0; padding: 6px 10px 0; border-top: 1px solid var(--line); }
 .lab-dots button { width: 26px; height: 26px; padding: 0; border: 0; background: none; cursor: pointer; display: grid; place-items: center; border-radius: 50%; }
 .lab-dots button::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--line); transition: background .2s, transform .2s; }
 .lab-dots button[aria-pressed="true"]::before { background: var(--maroon); transform: scale(1.3); }
 .lab-dots button:hover::before { background: var(--gold); }
+.lab-name, #lab-name { font-weight: 600; color: var(--text); }
+.lab-step { display: block; margin-top: 6px; color: var(--muted); font-size: .9rem; line-height: 1.5; min-height: 3em; }
+.lab-n { display: inline-block; margin-right: 4px; padding: 0 7px; border-radius: 6px; background: var(--maroon); color: var(--bg); font-size: .74rem; font-weight: 600; vertical-align: 1px; }
+.lab-n:empty { display: none; }
+.lab-dots .lab-pause { margin-right: 6px; border-radius: 8px; width: 30px; }
+.lab-dots .lab-pause::before { width: 10px; height: 11px; border-radius: 0; background: none; border-left: 3px solid var(--maroon); border-right: 3px solid var(--maroon); transform: none; }
+.lab-dots .lab-pause[aria-pressed="true"]::before { width: 0; height: 0; border-left: 11px solid var(--maroon); border-right: 0; border-top: 6.5px solid transparent; border-bottom: 6.5px solid transparent; }
+.lab-dots .lab-pause:hover::before { background: none; }
+@media (max-width: 600px) { .lab-step { min-height: 4.5em; } .lab-dots button[data-s] { width: 22px; } }
 
 /* Numbers */
 .numbers { padding: 44px 0 8px; }

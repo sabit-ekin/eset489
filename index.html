@@ -21,7 +21,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,500;0,600;1,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/style.css?v=2">
+<link rel="stylesheet" href="assets/style.css?v=3">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
@@ -64,18 +64,20 @@
       <figure class="lab" aria-labelledby="lab-cap">
         <canvas id="lab" aria-hidden="true"></canvas>
         <div class="lab-dots" role="group" aria-label="Choose an animation">
+          <button type="button" class="lab-pause" aria-pressed="false" aria-label="Pause the animation"></button>
           <button type="button" data-s="0" aria-label="Week 1: AI toolbox" aria-pressed="true"></button>
           <button type="button" data-s="1" aria-label="Weeks 2–3: linear algebra" aria-pressed="false"></button>
           <button type="button" data-s="2" aria-label="Week 3: gradient descent" aria-pressed="false"></button>
           <button type="button" data-s="3" aria-label="Week 4: probability" aria-pressed="false"></button>
           <button type="button" data-s="4" aria-label="Week 5: ML pipelines" aria-pressed="false"></button>
-          <button type="button" data-s="5" aria-label="Weeks 6–7: supervised learning" aria-pressed="false"></button>
-          <button type="button" data-s="6" aria-label="Weeks 8–9: unsupervised learning" aria-pressed="false"></button>
-          <button type="button" data-s="7" aria-label="Weeks 10–12: deep learning" aria-pressed="false"></button>
-          <button type="button" data-s="8" aria-label="Weeks 13–14: transformers and LLMs" aria-pressed="false"></button>
-          <button type="button" data-s="9" aria-label="Week 14: generative AI" aria-pressed="false"></button>
+          <button type="button" data-s="5" aria-label="Weeks 6–7: regression" aria-pressed="false"></button>
+          <button type="button" data-s="6" aria-label="Weeks 8–9: k-means clustering" aria-pressed="false"></button>
+          <button type="button" data-s="7" aria-label="Weeks 10–11: neural networks" aria-pressed="false"></button>
+          <button type="button" data-s="8" aria-label="Week 12: CNNs" aria-pressed="false"></button>
+          <button type="button" data-s="9" aria-label="Weeks 13–14: transformers and LLMs" aria-pressed="false"></button>
+          <button type="button" data-s="10" aria-label="Week 14: diffusion models" aria-pressed="false"></button>
         </div>
-        <figcaption id="lab-cap"><span class="lab-wk" id="lab-wk">Week 1</span> <span id="lab-name">Foundations: the open AI toolbox you will use all semester</span></figcaption>
+        <figcaption id="lab-cap"><span class="lab-wk" id="lab-wk">Week 1</span> <span id="lab-name">Foundations: the AI toolbox</span><span class="lab-step"><span class="lab-n" id="lab-n">1/4</span> <span id="lab-step">Python is the language of modern AI: almost every tool here is used from Python.</span></span></figcaption>
       </figure>
     </div>
   </section>
@@ -259,6 +261,6 @@
   </div>
 </footer>
 
-<script src="assets/app.js?v=2"></script>
+<script src="assets/app.js?v=3"></script>
 </body>
 </html>
